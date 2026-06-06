@@ -1,12 +1,12 @@
 # cuda-allocator
 
-A lightweight, header-only **bump (linear) allocator** for GPU memory in CUDA C++. Instead of calling `cudaMalloc` repeatedly, it pre-allocates a single large buffer and hands out aligned slices from it — fast, simple, and with zero fragmentation.
+A lightweight, header-only **bump (linear) allocator** for GPU memory in CUDA C++. Instead of calling `cudaMalloc` repeatedly, it pre-allocates a single large buffer and hands out aligned slices from it, fast, simple, and with zero fragmentation.
 
 ---
 
 ## How it works
 
-A bump allocator keeps a single offset pointer into a pre-allocated buffer. Every allocation just advances the offset by the requested size (aligned). There is no per-allocation bookkeeping and no free list — resetting the entire allocator is O(1).
+A bump allocator keeps a single offset pointer into a pre-allocated buffer. Every allocation just advances the offset by the requested size (aligned). There is no per-allocation bookkeeping and no free list, resetting the entire allocator is O(1).
 
 ```
  basePtr                         offset        capacity
@@ -21,12 +21,12 @@ A bump allocator keeps a single offset pointer into a pre-allocated buffer. Ever
 
 ## Features
 
-- **Single pre-allocation** — one `cudaMalloc` at startup, no per-call overhead
-- **Alignment support** — every allocation is aligned to the type's natural alignment
-- **Singleton pattern** — one global allocator instance per buffer size
-- **Typed allocations** — `alloc<T>(count)` returns a `T*` directly, no casting needed
-- **Reset** — wipe and reuse the entire buffer in one call
-- **Header-only** — just include the `.cuh` file, no linking required
+- **Single pre-allocation**: one `cudaMalloc` at startup, no per-call overhead
+- **Alignment support**: every allocation is aligned to the type's natural alignment
+- **Singleton pattern**: one global allocator instance per buffer size
+- **Typed allocations**: `alloc<T>(count)` returns a `T*` directly, no casting needed
+- **Reset**: wipe and reuse the entire buffer in one call
+- **Header-only**: just include the `.cuh` file, no linking required
 
 ---
 
@@ -49,7 +49,7 @@ int main() {
     // Get the singleton allocator
     auto& allocator = CudaAllocator<POOL_SIZE>::getAllocator();
 
-    // Allocate typed GPU memory — no sizeof, no cast
+    // Allocate typed GPU memory no sizeof, no cast
     int*   d_a = allocator.alloc<int>(256);
     float* d_b = allocator.alloc<float>(256);
 
@@ -67,7 +67,7 @@ int main() {
 
 ---
 
-## Example — vector addition
+## Example - vector addition
 
 ```cpp
 constexpr std::size_t SIZE = 1024;
@@ -158,9 +158,9 @@ CudaAllocator/
 
 ## Limitations
 
-- **No individual frees** — bump allocators only support resetting the whole pool
-- **No thread safety** — not safe to call `alloc` concurrently from multiple CPU threads
-- Move semantics are disabled alongside copy — the allocator is a singleton and should never be moved or copied
+- **No individual frees**: bump allocators only support resetting the whole pool
+- **No thread safety**: not safe to call `alloc` concurrently from multiple CPU threads
+- Move semantics are disabled alongside copy: the allocator is a singleton and should never be moved or copied
 
 ---
 
