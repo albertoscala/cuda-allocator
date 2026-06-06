@@ -40,6 +40,10 @@ private:
     CudaAllocator(const CudaAllocator&) = delete;
     CudaAllocator& operator=(const CudaAllocator&) = delete;
 
+    // Disable move semantics
+    CudaAllocator(CudaAllocator&&) = delete;
+    CudaAllocator& operator=(CudaAllocator&&) = delete;
+
 public:
     // Destructor
     ~CudaAllocator()
@@ -91,5 +95,5 @@ public:
 
     // DEBUG functions
     size_t used() const { return offset; }      // Returns until which point the memory is used
-    size_t total() const { return capacity; }     // Returns the memory total size
+    constexpr size_t total() const { return SIZE; }     // Returns the memory total size
 };
