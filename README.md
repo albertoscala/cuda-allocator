@@ -1,2 +1,2 @@
-# cuda-bump-allocator
+# cuda-allocator
 
