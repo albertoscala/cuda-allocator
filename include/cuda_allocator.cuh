@@ -29,7 +29,7 @@ private:
         // In case of error
         if (cudaStatus != cudaSuccess)
         {
-            std::cerr << "CudaAllocator: Preallocation failed: " << cudaGetErrorString(cudaStatus)) << "\n";
+            std::cerr << "CudaAllocator: Preallocation failed: " << cudaGetErrorString(cudaStatus) << "\n";
             basePtr = nullptr;
             capacity = 0;
         }
