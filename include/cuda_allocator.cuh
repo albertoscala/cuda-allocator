@@ -20,6 +20,11 @@ private:
         return (n + alignment - 1) & ~(alignment - 1);
     }
 
+    // Delete copy constructor and assignment operator
+    CudaAllocator(const CudaAllocator&) = delete;
+    CudaAllocator& operator=(const CudaAllocator&) = delete;
+
+public:
     // Constructor
     CudaAllocator() : basePtr(nullptr), capacity(SIZE), offset(0)
     {
@@ -36,26 +41,39 @@ private:
 
     }
 
-    // Delete copy constructor and assignment operator
-    CudaAllocator(const CudaAllocator&) = delete;
-    CudaAllocator& operator=(const CudaAllocator&) = delete;
+    // Enable move semantics
+    CudaAllocator(CudaAllocator&& other) noexcept
+        : basePtr(other.basePtr), capacity(other.capacity), offset(other.offset) 
+    {
+        other.basePtr = nullptr;
+        other.capacity = 0;
+        other.offset = 0;
+    }
 
-    // Disable move semantics
-    CudaAllocator(CudaAllocator&&) = delete;
-    CudaAllocator& operator=(CudaAllocator&&) = delete;
+    CudaAllocator& operator=(CudaAllocator&& other) noexcept
+    {
+        if (this != &other) 
+        {
+            // The "old" buffer i now useless
+            cudaFree(basePtr);
 
-public:
+            // Move the values to the new object
+            basePtr = other.basePtr;
+            capacity = other.capacity;
+            offset = other.offset;
+
+            // Clear the previous object
+            other.basePtr = nullptr;
+            other.capacity = 0;
+            other.offset = 0;
+        }
+        return *this;
+    }
+
     // Destructor
     ~CudaAllocator()
     {
         cudaFree(this->basePtr);
-    }
-
-    // Function that returns the allocator instance
-    static CudaAllocator& getAllocator()
-    {
-        static CudaAllocator<SIZE> instance;
-        return instance;
     }
 
     // Alloc function

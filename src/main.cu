@@ -20,7 +20,7 @@ __global__ void vectorAdd(T* a, T* b, T* c)
 
 int main()
 {
-    CudaAllocator<SIZE>& allocator = CudaAllocator<SIZE>::getAllocator();
+    CudaAllocator<SIZE> allocator{};
 
     std::array<int, 10> a{0,1,2,3,4,5,6,7,8,9};
     std::array<int, 10> b{0,2,4,6,8,0,2,4,6,8};

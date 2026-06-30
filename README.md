@@ -6,7 +6,13 @@ A lightweight, header-only **bump (linear) allocator** for GPU memory in CUDA C+
 
 ## How it works
 
-A bump allocator keeps a single offset pointer into a pre-allocated buffer. Every allocation just advances the offset by the requested size (aligned). There is no per-allocation bookkeeping and no free list, resetting the entire allocator is O(1).
+A bump allocator keeps a single offset pointer into a pre-allocated buffer. Every allocation just advances the offset by the requested size (aligned).
+There is no per-allocation bookkeeping and no free list — discarding all
+allocations is just resetting the offset, an O(1) operation. (Note: this
+implementation's `reset()` also zeroes the underlying memory via
+`cudaMemset`, which is O(capacity); if you only need to discard
+allocations without zeroing, that's a cheaper variant worth offering
+separately.)
 
 ```
  basePtr                         offset        capacity
@@ -23,7 +29,6 @@ A bump allocator keeps a single offset pointer into a pre-allocated buffer. Ever
 
 - **Single pre-allocation**: one `cudaMalloc` at startup, no per-call overhead
 - **Alignment support**: every allocation is aligned to the type's natural alignment
-- **Singleton pattern**: one global allocator instance per buffer size
 - **Typed allocations**: `alloc<T>(count)` returns a `T*` directly, no casting needed
 - **Reset**: wipe and reuse the entire buffer in one call
 - **Header-only**: just include the `.cuh` file, no linking required
@@ -46,8 +51,8 @@ A bump allocator keeps a single offset pointer into a pre-allocated buffer. Ever
 constexpr std::size_t POOL_SIZE = 1024 * 1024; // 1 MB
 
 int main() {
-    // Get the singleton allocator
-    auto& allocator = CudaAllocator<POOL_SIZE>::getAllocator();
+    // Create the allocator
+    CudaAllocator<POOL_SIZE> allocator{};
 
     // Allocate typed GPU memory no sizeof, no cast
     int*   d_a = allocator.alloc<int>(256);
@@ -56,7 +61,7 @@ int main() {
     // Use normally with cudaMemcpy, kernels, etc.
     // ...
 
-    // Reset the entire pool (O(1))
+    // Reset the entire pool (zeroes memory, then resets offset)
     allocator.reset();
 
     // Debug
@@ -80,7 +85,7 @@ __global__ void vectorAdd(T* a, T* b, T* c, std::uint32_t n) {
 }
 
 int main() {
-    auto& allocator = CudaAllocator<SIZE>::getAllocator();
+    CudaAllocator<SIZE> allocator{};
 
     std::array<int, 10> a{0,1,2,3,4,5,6,7,8,9};
     std::array<int, 10> b{0,2,4,6,8,0,2,4,6,8};
@@ -147,7 +152,6 @@ CudaAllocator/
 
 | Method | Description |
 |---|---|
-| `getAllocator()` | Returns the singleton instance |
 | `alloc<T>(count)` | Allocates `count` elements of type `T`, returns `T*` |
 | `alloc(bytes)` | Allocates raw bytes, returns `void*` |
 | `reset()` | Resets the offset to 0 and zeroes the buffer |
@@ -158,9 +162,10 @@ CudaAllocator/
 
 ## Limitations
 
+- **Allocation failures**: `alloc()` returns `nullptr` on failure (construction error or out of pool memory) — callers should check the result before use
 - **No individual frees**: bump allocators only support resetting the whole pool
 - **No thread safety**: not safe to call `alloc` concurrently from multiple CPU threads
-- Move semantics are disabled alongside copy: the allocator is a singleton and should never be moved or copied
+- **Non-copyable, move-only**: each instance uniquely owns a GPU buffer
 
 ---
 
